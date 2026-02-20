@@ -2,6 +2,8 @@
 #include "hardware/spi.h"
 #include "hardware/dma.h"
 
+#include "stdio.h"
+
 #include "ili9341.h"
 
 uint16_t _width;  ///< Display width as modified by current rotation
@@ -220,12 +222,19 @@ void LCD_setRotation(uint8_t m)
 		_height = ILI9341_TFTWIDTH;
 		break;
 	}
-
 	ILI9341_SendCommand(ILI9341_MADCTL, &m, 1);
 }
 
+
 void LCD_setAddrWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 {
+
+	//original code here
+	/*
+		uint32_t xa = ((uint32_t)x << 16) | (x + w - 1);
+		uint32_t ya = ((uint32_t)y << 16) | (y + h - 1);
+	*/
+	//DEBUG: IF THIS DOSENT WORK FUCK ME
 	uint32_t xa = ((uint32_t)x << 16) | (x + w - 1);
 	uint32_t ya = ((uint32_t)y << 16) | (y + h - 1);
 
@@ -233,11 +242,11 @@ void LCD_setAddrWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 	ya = __builtin_bswap32(ya);
 
 	ILI9341_WriteCommand(ILI9341_CASET);
-	ILI9341_WriteData(&xa, sizeof(xa));
+	ILI9341_WriteData((uint8_t *)&xa, sizeof(xa));
 
 	// row address set
 	ILI9341_WriteCommand(ILI9341_PASET);
-	ILI9341_WriteData(&ya, sizeof(ya));
+	ILI9341_WriteData((uint8_t *)&ya, sizeof(ya));
 
 	// write to RAM
 	ILI9341_WriteCommand(ILI9341_RAMWR);

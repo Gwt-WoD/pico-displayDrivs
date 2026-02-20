@@ -7,6 +7,11 @@
 #include "gfxfont.h"
 
 #include "hardware/dma.h"
+#include "stdlib.h"
+#include "stdio.h"
+#include "../ili9341/ili9341.h"
+#include "string.h"
+
 
 #ifndef swap
 #define swap(a, b)     \
