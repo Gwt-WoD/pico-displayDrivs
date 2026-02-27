@@ -60,6 +60,17 @@ void waitForDMA()
 
 	dma_channel_wait_for_finish_blocking(dma_tx);
 }
+void LCD_WaitForDMA() {
+	waitForDMA();
+}
+void ILI9341_DeSelect();
+void dma_handler()
+{
+	if (dma_channel_get_irq1_status(dma_tx)) {
+		ILI9341_DeSelect();
+		dma_channel_acknowledge_irq1(dma_tx);
+	}
+}
 #endif
 
 void LCD_setPins(uint16_t dc, uint16_t cs, int16_t rst, uint16_t sck, uint16_t tx)
@@ -103,6 +114,9 @@ void initSPI()
 	dma_cfg = dma_channel_get_default_config(dma_tx);
 	channel_config_set_transfer_data_size(&dma_cfg, DMA_SIZE_16);
 	channel_config_set_dreq(&dma_cfg, spi_get_dreq(ili9341_spi, true));
+	dma_channel_set_irq1_enabled(dma_tx, true);
+	irq_set_exclusive_handler(DMA_IRQ_1, dma_handler);
+	irq_set_enabled(DMA_IRQ_1, true);
 #endif
 }
 
@@ -154,6 +168,9 @@ void ILI9341_WriteData(uint8_t *buff, size_t buff_size)
 void ILI9341_SendCommand(uint8_t commandByte, uint8_t *dataBytes,
 						 uint8_t numDataBytes)
 {
+#ifdef USE_DMA
+	waitForDMA();
+#endif
 	ILI9341_Select();
 
 	ILI9341_WriteCommand(commandByte);
@@ -254,6 +271,9 @@ void LCD_setAddrWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 
 void LCD_WriteBitmap(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *bitmap)
 {
+#ifdef USE_DMA
+	waitForDMA();
+#endif
 	ILI9341_Select();
 	LCD_setAddrWindow(x, y, w, h); // Clipped area
 	ILI9341_RegData();
@@ -264,17 +284,21 @@ void LCD_WriteBitmap(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *b
 						  bitmap,						// read address
 						  w * h,						// element count (each element is of size transfer_data_size)
 						  true);						// start asap
-	waitForDMA();
+	// waitForDMA();
 #else
 
 	spi_write16_blocking(ili9341_spi, bitmap, w * h);
+	ILI9341_DeSelect();
 #endif
 
-	ILI9341_DeSelect();
+	
 }
 
 void LCD_WritePixel(int x, int y, uint16_t col)
 {
+#ifdef USE_DMA
+	waitForDMA();
+#endif
 	ILI9341_Select();
 	LCD_setAddrWindow(x, y, 1, 1); // Clipped area
 	ILI9341_RegData();

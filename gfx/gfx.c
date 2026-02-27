@@ -452,6 +452,11 @@ void GFX_printf(const char *format, ...)
 	va_end(args);
 }
 
+void GFX_setFramebuf(uint16_t* buff)
+{
+	gfxFramebuffer = buff;
+}
+
 void GFX_createFramebuf()
 {
 	gfxFramebuffer = malloc(_width * _height * sizeof(uint16_t));
@@ -468,6 +473,16 @@ void GFX_flush()
 	{
 		LCD_WriteBitmap(0, 0, _width, _height, gfxFramebuffer);
 		gfxFbUpdated = false;
+	}
+}
+
+void GFX_flush_rows(uint16_t y, uint16_t h)
+{
+	if (gfxFramebuffer != NULL)
+	{
+		if (y+h <= _height)
+			LCD_WriteBitmap(0, y, _width, h, gfxFramebuffer+(y*_width)-1);
+		// gfxFbUpdated = false;
 	}
 }
 
