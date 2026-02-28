@@ -89,7 +89,12 @@ void LCD_setSPIperiph(spi_inst_t *s)
 
 void initSPI()
 {
-	spi_init(ili9341_spi, 1000 * 40000);
+	// uint32_t b = spi_init(ili9341_spi, 40*1000*1000);
+	uint32_t b = spi_init(ili9341_spi, 65*1000*1000);
+	// uint32_t b = spi_init(ili9341_spi, 66*1000*1000);
+	// uint32_t b = spi_init(ili9341_spi, 134*1000*1000);
+	// uint32_t b = spi_init(ili9341_spi, 129*1000*1000);
+	printf("SPI Baud set to %u MHz\n", b/(1000*1000));
 	spi_set_format(ili9341_spi, 16, SPI_CPOL_1, SPI_CPOL_1, SPI_MSB_FIRST);
 	gpio_set_function(ili9341_pinSCK, GPIO_FUNC_SPI);
 	gpio_set_function(ili9341_pinTX, GPIO_FUNC_SPI);
