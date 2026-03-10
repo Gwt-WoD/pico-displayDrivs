@@ -53,12 +53,21 @@ const uint8_t initcmd[] = {
 };
 
 #ifdef USE_DMA
+volatile bool dma_active = 0;
 uint dma_tx;
 dma_channel_config dma_cfg;
 void waitForDMA()
 {
+	// // Wait for the cs line to be reset by irq after dma finishes
+	// while (!gpio_get(ili9341_pinCS)) tight_loop_contents();
+	// // stop the compiler hoisting a non-volatile buffer access above the DMA completion.
+	// __compiler_memory_barrier();
+
+	// sleep_us(2); // TODO: Read datasheet for min period between CS assertions
 
 	dma_channel_wait_for_finish_blocking(dma_tx);
+	
+	// while (dma_active) tight_loop_contents();
 }
 void LCD_WaitForDMA() {
 	waitForDMA();
@@ -67,8 +76,10 @@ void ILI9341_DeSelect();
 void dma_handler()
 {
 	if (dma_channel_get_irq1_status(dma_tx)) {
+		// dma_channel_acknowledge_irq1(dma_tx);
 		ILI9341_DeSelect();
 		dma_channel_acknowledge_irq1(dma_tx);
+		// dma_active = 0;
 	}
 }
 #endif
@@ -138,12 +149,14 @@ void ILI9341_Reset()
 
 void ILI9341_Select()
 {
+	// dma_active = 1;
 	gpio_put(ili9341_pinCS, 0);
 }
 
 void ILI9341_DeSelect()
 {
 	gpio_put(ili9341_pinCS, 1);
+	// dma_active = 0;
 }
 
 void ILI9341_RegCommand()
@@ -250,13 +263,6 @@ void LCD_setRotation(uint8_t m)
 
 void LCD_setAddrWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 {
-
-	//original code here
-	/*
-		uint32_t xa = ((uint32_t)x << 16) | (x + w - 1);
-		uint32_t ya = ((uint32_t)y << 16) | (y + h - 1);
-	*/
-	//DEBUG: IF THIS DOSENT WORK FUCK ME
 	uint32_t xa = ((uint32_t)x << 16) | (x + w - 1);
 	uint32_t ya = ((uint32_t)y << 16) | (y + h - 1);
 
@@ -279,6 +285,8 @@ void LCD_WriteBitmap(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *b
 #ifdef USE_DMA
 	waitForDMA();
 #endif
+	ILI9341_DeSelect();
+	sleep_us(5); // TODO: DON'T FIX RACE CONDITION WITH A DELAY
 	ILI9341_Select();
 	LCD_setAddrWindow(x, y, w, h); // Clipped area
 	ILI9341_RegData();
@@ -296,7 +304,6 @@ void LCD_WriteBitmap(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t *b
 	ILI9341_DeSelect();
 #endif
 
-	
 }
 
 void LCD_WritePixel(int x, int y, uint16_t col)

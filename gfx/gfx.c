@@ -480,8 +480,9 @@ void GFX_flush_rows(uint16_t y, uint16_t h)
 {
 	if (gfxFramebuffer != NULL)
 	{
-		if (y+h <= _height)
-			LCD_WriteBitmap(0, y, _width, h, gfxFramebuffer+(y*_width)-1);
+		if (y+h < _height)
+			LCD_WriteBitmap(0, y, _width, h, &(gfxFramebuffer[y*_width]));
+		// else printf("INVALID ROWS\n");
 		// gfxFbUpdated = false;
 	}
 }
